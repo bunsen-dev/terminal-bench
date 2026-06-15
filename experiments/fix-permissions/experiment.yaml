@@ -1,0 +1,30 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: fix-permissions
+description: 'A script called ''/workspace/process_data.sh'' won''t run. Category: system-administration. Difficulty: easy'
+task:
+  prompt: A script called '/workspace/process_data.sh' won't run. Figure out what's wrong and fix it so the script can run
+    successfully.
+workspace:
+  sources:
+    - path: ./workspace
+  setup:
+    - run: |
+        chmod -x /workspace/process_data.sh
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      pip:
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

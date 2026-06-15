@@ -1,0 +1,356 @@
+# Terminal Bench → Bunsen conversion overrides
+# Per-task configuration for cases the auto-converter can't handle.
+#
+# These keys are inputs to scripts/convert-terminal-bench.py. They describe
+# Terminal Bench-flavored intent; the converter translates them into the v1
+# `experiment.yaml` schema.
+#
+# Fields (input → v1 mapping noted where it differs):
+#   skip: true              - Skip this task entirely
+#   skip_reason: "..."      - Why it's skipped
+#   dir_name: "..."         - Directory name in original-tasks (if different from task ID)
+#   variant_of: "base-task" - This task shares a TB source dir with another task
+#   custom_dockerfile: true - Generate a custom Dockerfile next to experiment.yaml
+#   create_empty_workspace: true - Create an empty `workspace/` (for tasks populated via workspace.setup)
+#   description: "..."      - Override auto-generated description
+#   instruction_suffix: "..." - Text to append to the TB instruction (becomes task.prompt)
+#   timeout: 900            - Agent timeout in seconds → run.timeout (duration)
+#   criterion_timeout: 120  - Override the Tests-Pass criterion timeout in seconds → evaluation.criteria[].timeout
+#   verifier_subprocess_timeout: 120 - Override `timeout=...` inside copied pytest verifiers
+#   extra_apt: [...]        - Extra apt packages → environment.requires.packages.apt (or injected into the custom Dockerfile)
+#   extra_pip: [...]        - Extra pip packages → environment.requires.packages.pip
+#   test_pip: [...]         - Override auto-detected test pip deps
+#   platforms: [...]        - Restrict supported platforms → environment.platforms
+#   requires_root: true     - Run agent as root → environment.user: root
+#   score_in_agent_container: true - Run scorers in agent's container → evaluation.container: agent
+#   environment:            - Legacy-shaped overrides applied after auto-detection
+#     workspace_setup: "..." - Single setup command or list → workspace.setup[].run
+#   workspace_setup_timeout: 300 - Seconds → workspace.setup[].timeout (duration)
+#   extra_workspace_files:  - Files from the TB task dir to copy into workspace/
+#     - src: "file.txt"     - Source path relative to the TB task dir
+#       dst: "file.txt"     - Destination path relative to workspace/
+#   workspace:              - v1-shaped workspace overrides (passed through)
+#     sources:
+#       - imagePath: "/workspace/file.txt"  # legacy `image_path` is also accepted
+#         target: "file.txt"
+
+# ============================================================================
+# SKIPPED TASKS
+# ============================================================================
+
+super-benchmark-upet:
+  skip: true
+  skip_reason: "Not found in Terminal Bench repository"
+
+vim-terminal-task:
+  skip: true
+  skip_reason: "Not found in Terminal Bench repository"
+
+security-vulhub-minio:
+  skip: true
+  skip_reason: "Multi-service task requiring separate MinIO container"
+
+simple-sheets-put:
+  skip: true
+  skip_reason: "Multi-service task requiring PostgreSQL + API server"
+
+simple-web-scraper:
+  skip: true
+  skip_reason: "Multi-service task requiring web server container"
+
+# ============================================================================
+# NAME REMAPPING
+# ============================================================================
+
+eval-mteb:
+  custom_dockerfile: true
+  dir_name: mteb-eval
+  timeout: 1200
+
+# ============================================================================
+# VARIANT TASKS
+# ============================================================================
+
+incompatible-python-fasttext_with_hint:
+  variant_of: incompatible-python-fasttext
+  custom_dockerfile: true
+  score_in_agent_container: true
+  # `procps` for claude-sdk-agent's KillShell tool; `tmux` for supervised
+  # claude-code variants. Both are absent from python:3.13-slim-bookworm.
+  extra_apt: [procps, tmux]
+  workspace:
+    sources:
+      - image_path: /model.bin
+        target: model.bin
+  instruction_suffix: |
+
+    Hint: The issue is related to a numpy API change in Python 3.13. The fasttext package uses `np.array(probs, copy=False)` which is no longer supported. Look in the fasttext source code (in site-packages) for this call and replace it with `np.asarray(probs)`.
+
+# ============================================================================
+# TIER 3: CUSTOM DOCKERFILE TASKS
+# These tasks need a custom Dockerfile due to heavy builds, non-standard base
+# images, large downloads, or complex environment setup. When custom_dockerfile
+# is true, environment.packages in experiment.yaml is not used — all deps must
+# be installed in the Dockerfile. Use `extra_apt` and `test_pip` for additional
+# packages; the converter injects those plus pytest into the generated Dockerfile.
+# ============================================================================
+
+gpt2-codegolf:
+  custom_dockerfile: true
+  criterion_timeout: 240
+  verifier_subprocess_timeout: 180
+  workspace:
+    sources:
+      - image_path: /gpt2-124M.ckpt
+        target: gpt2-124M.ckpt
+      - image_path: /vocab.bpe
+        target: vocab.bpe
+
+qemu-startup:
+  custom_dockerfile: true
+  score_in_agent_container: true
+
+play-zork:
+  custom_dockerfile: true
+
+create-bucket:
+  custom_dockerfile: true
+
+fix-pandas-version:
+  custom_dockerfile: true
+  test_pip: [packaging==21.3]
+  score_in_agent_container: true
+
+incompatible-python-fasttext:
+  custom_dockerfile: true
+  score_in_agent_container: true
+  # See note on the `_with_hint` variant: python:3.13-slim-bookworm doesn't
+  # include `procps` (needed by claude-sdk-agent) or `tmux` (supervised mode).
+  extra_apt: [procps, tmux]
+  workspace:
+    sources:
+      - image_path: /model.bin
+        target: model.bin
+
+oom:
+  custom_dockerfile: true
+  score_in_agent_container: true
+
+reshard-c4-data:
+  custom_dockerfile: true
+  test_pip: [datasets==3.6.0, tqdm==4.67.1]
+
+conda-env-conflict-resolution:
+  custom_dockerfile: true
+  score_in_agent_container: true
+
+tmux-advanced-workflow:
+  custom_dockerfile: true
+  extra_apt: [tmux]
+
+path-tracing:
+  custom_dockerfile: true
+  test_pip: [pillow==11.2.1, numpy==2.3.1]
+  workspace:
+    sources:
+      - image_path: /app/image.ppm
+        target: image.ppm
+
+path-tracing-reverse:
+  custom_dockerfile: true
+  test_pip: [pillow==11.2.1, numpy==2.3.1]
+  workspace:
+    sources:
+      - image_path: /app/mystery
+        target: mystery
+
+# These were originally Tier 2 but have complex setup that's better as Dockerfile
+chess-best-move:
+  custom_dockerfile: true
+  workspace:
+    sources:
+      - image_path: /app/chess_board.png
+        target: chess_board.png
+
+extract-safely:
+  custom_dockerfile: true
+  workspace:
+    sources:
+      - image_path: /app/archive.tar
+        target: archive.tar
+      - image_path: /app/system_logs.dat
+        target: system_logs.dat
+
+new-encrypt-command:
+  custom_dockerfile: true
+  # The TB Dockerfile installs `rencrypt` globally (/usr/local/bin) and stages
+  # the inputs at /app/data/. Seed those image-backed inputs into the runtime
+  # /workspace/data/ so the agent has files to encrypt and the verifier finds
+  # the expected outputs under /workspace/encrypted_data/.
+  workspace:
+    sources:
+      - image_path: /app/data/sample1.txt
+        target: data/sample1.txt
+      - image_path: /app/data/sample2.txt
+        target: data/sample2.txt
+
+processing-pipeline:
+  custom_dockerfile: true
+
+# ============================================================================
+# TIER 2: WORKSPACE_SETUP TASKS
+# These use environment.packages + environment.workspace_setup commands.
+# ============================================================================
+
+fix-git:
+  extra_apt: [git]
+  extra_workspace_files:
+    - src: "setup.sh"
+      dst: "setup.sh"
+    - src: "resources"
+      dst: "resources"
+  environment:
+    workspace_setup: |
+      cd /workspace && bash /workspace/setup.sh
+  workspace_setup_timeout: 120
+
+git-workflow-hack:
+  extra_apt: [git, grep, sed, curl]
+  extra_workspace_files:
+    - src: "setup.sh"
+      dst: "setup.sh"
+  environment:
+    workspace_setup: |
+      cd /workspace && bash /workspace/setup.sh
+  workspace_setup_timeout: 120
+
+sanitize-git-repo:
+  extra_apt: [git]
+  test_pip: [gitpython==3.1.44]
+  extra_workspace_files:
+    - src: "setup.sh"
+      dst: "setup.sh"
+  environment:
+    workspace_setup: |
+      cd /workspace && bash /workspace/setup.sh
+  workspace_setup_timeout: 120
+
+password-recovery:
+  custom_dockerfile: true
+
+decommissioning-service-with-sensitive-data:
+  custom_dockerfile: true
+  score_in_agent_container: true
+  requires_root: true
+
+prove-plus-comm:
+  custom_dockerfile: true
+
+modernize-fortran-build:
+  extra_apt: [gfortran, make]
+  extra_workspace_files:
+    - src: "src"
+      dst: "src"
+
+# ============================================================================
+# TIER 1: SIMPLE TASKS (overrides for extra deps or descriptions only)
+# ============================================================================
+
+blind-maze-explorer-5x5:
+  custom_dockerfile: true
+  score_in_agent_container: true
+  requires_root: true
+  # python:3.13-slim-bookworm lacks `procps` (claude-sdk-agent KillShell) and
+  # `tmux` (supervised mode). Add them so the agent stack works regardless of
+  # variant.
+  extra_apt: [procps, tmux]
+
+blind-maze-explorer-algorithm:
+  custom_dockerfile: true
+  score_in_agent_container: true
+  requires_root: true
+  extra_apt: [procps, tmux]
+
+fix-permissions:
+  extra_workspace_files:
+    - src: "process_data.sh"
+      dst: "process_data.sh"
+  environment:
+    workspace_setup: |
+      chmod -x /workspace/process_data.sh
+
+intrusion-detection:
+  extra_apt: [jq, bc]
+
+hf-model-inference:
+  custom_dockerfile: true
+  test_pip: [psutil==7.0.0, requests==2.32.4]
+  score_in_agent_container: true
+
+jupyter-notebook-server:
+  test_pip: [requests==2.32.4, nbformat==5.10.4, jupyter-server==2.17.0]
+  score_in_agent_container: true
+
+nginx-request-logging:
+  extra_apt: [curl, nginx]
+  extra_pip: [requests]
+  requires_root: true
+  score_in_agent_container: true
+
+openssl-selfsigned-cert:
+  extra_apt: [openssl]
+
+cartpole-rl-training:
+  custom_dockerfile: true
+  timeout: 5400
+
+organization-json-generator:
+  extra_pip: [jsonschema]
+
+download-youtube:
+  description: "Download and extract a frame from a YouTube video"
+  test_pip: [opencv-python-headless==4.11.0.86, numpy==2.3.1]
+
+extract-moves-from-video:
+  description: "Extract chess moves from a video"
+  test_pip: [opencv-python==4.11.0.86, numpy==2.3.1]
+  timeout: 1800
+
+get-bitcoin-nodes:
+  test_pip: [requests==2.32.4, psutil==7.0.0]
+  score_in_agent_container: true
+
+solana-data:
+  test_pip: [requests==2.32.4, psutil==7.0.0]
+  score_in_agent_container: true
+
+count-dataset-tokens:
+  description: "Count tokens in a dataset using a tokenizer"
+
+heterogeneous-dates:
+  description: "Parse and normalize dates in heterogeneous formats"
+
+grid-pattern-transform:
+  test_pip: [numpy==2.3.1]
+
+raman-fitting:
+  description: "Fit Raman spectroscopy data to a model"
+  timeout: 1800
+
+run-pdp11-code:
+  timeout: 3600
+
+pytorch-model-cli:
+  description: "Build a CLI tool for PyTorch model operations"
+  test_pip: [torch==2.7.1, torchvision==0.22.1, numpy==2.3.1, opencv-python-headless==4.11.0.86]
+
+sqlite-db-truncate:
+  description: "Truncate and repair a corrupted SQLite database"
+
+csv-to-parquet:
+  extra_apt: [curl]
+  test_pip: [pandas==2.3.0, pyarrow==20.0.0]
+
+fibonacci-server:
+  test_pip: [requests==2.32.4]
+  score_in_agent_container: true

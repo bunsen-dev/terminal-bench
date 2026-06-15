@@ -1,0 +1,29 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: new-encrypt-command
+description: 'Please help me encrypt all the files I have in the /workspace/data/ folder using rencrypt which i''ve just installed.
+  Category: security. Difficulty: easy'
+task:
+  prompt: |-
+    Please help me encrypt all the files I have in the /workspace/data/ folder using rencrypt which i've just installed.
+
+    I want to use the most secure encryption that it provides and the output should go into a /workspace/encrypted_data/ directory where the basenames are the same.
+workspace:
+  sources:
+    - imagePath: /app/data/sample1.txt
+      target: data/sample1.txt
+    - imagePath: /app/data/sample2.txt
+      target: data/sample2.txt
+environment:
+  image:
+    base: bunsen/headless
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

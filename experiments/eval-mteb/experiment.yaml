@@ -1,0 +1,27 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: eval-mteb
+description: >-
+  Evaluate an embedding model from huggingface on STS12 with mteb such that it achieves a cosine_spearman score of >
+  0.7. Category: data-science. Difficulty: medium
+task:
+  prompt: >-
+    Evaluate an embedding model from huggingface on STS12 with mteb such that it achieves a cosine_spearman score of >
+    0.7. Use the default huggingface cache directory to store the model (~/.cache/huggingface). The result file should
+    follow the default MTEB format i.e. `results/{{hf model org}__{hf model name}}/{model commit id}/{task name}.json`.
+environment:
+  image:
+    base: bunsen/headless
+run:
+  timeout: 20m
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 4m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

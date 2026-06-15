@@ -1,0 +1,31 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: organization-json-generator
+description: 'Create a JSON processor that transforms CSV data into a structured JSON file following the schema defined in
+  /workspa.... Category: file-operations. Difficulty: hard'
+task:
+  prompt: 'Create a JSON processor that transforms CSV data into a structured JSON file following the schema defined in /workspace/schema.json.
+    Requirements: 1. Use the provided CSV files (/workspace/data/departments.csv, /workspace/data/employees.csv, /workspace/data/projects.csv)
+    as input data 2. Generate a file called ''/workspace/organization.json'' that follows the schema defined. 3. The output
+    must include: Organization metadata, Department information with employees and projects, Statistical calculations'
+workspace:
+  sources:
+    - path: ./workspace
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      pip:
+        - jsonschema
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

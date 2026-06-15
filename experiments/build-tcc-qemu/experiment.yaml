@@ -1,0 +1,53 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: build-tcc-qemu
+description: >-
+  Build TCC from local source and package it on an ISO for a prebuilt QEMU guest. Category: system-administration.
+  Difficulty: medium
+task:
+  prompt: >-
+    I already have a bootable guest environment prepared for you:
+
+    - kernel: `/workspace/linux-6.9/arch/x86/boot/bzImage`
+
+    - initramfs: `/workspace/ramfs/initramfs.cpio.gz`
+
+    - TCC source tree: `/workspace/tcc-0.9.27`
+
+
+    You do not need to rebuild the kernel or initramfs. The container also already includes ISO creation tooling.
+
+
+    Compile TCC and put it on an ISO that's attached to my CD-ROM so that I can run:
+
+    `qemu-system-x86_64 -kernel /workspace/linux-6.9/arch/x86/boot/bzImage -initrd /workspace/ramfs/initramfs.cpio.gz
+    -append "console=ttyS0" -nographic -cdrom /tmp/tcc.iso`
+
+
+    After mounting the CD-ROM in the guest and copying its contents into `/`, I should then be able to use `tcc`.
+workspace:
+  sources:
+    - imagePath: /seed/linux-6.9
+      target: linux-6.9
+    - imagePath: /seed/ramfs
+      target: ramfs
+    - imagePath: /seed/tcc-0.9.27
+      target: tcc-0.9.27
+environment:
+  image:
+    base: bunsen/headless
+  platforms:
+    - linux/amd64
+run:
+  timeout: 30m
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

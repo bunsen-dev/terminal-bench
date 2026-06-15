@@ -1,0 +1,42 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: polyglot-c-py
+description: |-
+  Write a single-file Python/C polyglot at /workspace/polyglot/main.py.c that
+  prints the Nth Fibonacci number when executed via python3 or compiled and run
+  via gcc. Category: software-engineering. Difficulty: medium
+task:
+  prompt: |-
+    Write me a single file in /workspace/polyglot/main.py.c which is a polyglot, that is, I can run
+
+    `python3 /workspace/polyglot/main.py.c N`
+    or
+    `gcc /workspace/polyglot/main.py.c -o /workspace/polyglot/cmain && /workspace/polyglot/cmain N`
+
+    Both of these should print to stdout the kth Fibonacci number, f(0) = 0, f(1) = 1, etc.
+
+    I'm using python3 3.12.3 and gcc 13.2.0.
+
+    The deliverable is the single source file at /workspace/polyglot/main.py.c.
+    Feel free to compile and run it to verify it works — leaving build artifacts
+    like /workspace/polyglot/cmain behind from your own verification will not
+    affect grading.
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      apt:
+        - gcc
+      pip:
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

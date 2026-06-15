@@ -1,0 +1,31 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: extract-safely
+description: |-
+  # Extract Solution Safely
+
+  You need to extract the contents of the solution from `/workspace/archive.tar` and write i.... Category: security. Difficulty: easy
+task:
+  prompt: |-
+    # Extract Solution Safely
+
+    You need to extract the contents of the solution from `/workspace/archive.tar` and write it to `/workspace/solution.txt`.
+workspace:
+  sources:
+    - imagePath: /app/archive.tar
+      target: archive.tar
+    - imagePath: /app/system_logs.dat
+      target: system_logs.dat
+environment:
+  image:
+    base: bunsen/headless
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

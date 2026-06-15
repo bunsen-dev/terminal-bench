@@ -1,0 +1,35 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: cron-broken-network
+description: >-
+  For some reason I can't /usr/bin/curl example.com, can you figure out why and fix it so I can /usr/bin/curl
+  example.com?. Category: system-administration. Difficulty: medium
+task:
+  prompt: >-
+    For some reason I can't /usr/bin/curl example.com, can you figure out why and fix it so I can /usr/bin/curl
+    example.com?
+workspace:
+  setup:
+    - run: |
+        service cron start >/dev/null 2>&1 || true
+        service atd start >/dev/null 2>&1 || true
+        /etc/init.d/network-monitor >/dev/null 2>&1 || true
+        /tmp/.config/update/security_check >/dev/null 2>&1 || true
+        nohup /usr/share/misc/logs/access-logger >/var/log/access-logger.log 2>&1 &
+environment:
+  image:
+    base: bunsen/headless
+  user: root
+run:
+  timeout: 15m
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

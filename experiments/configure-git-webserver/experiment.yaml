@@ -1,0 +1,55 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: configure-git-webserver
+description: Configure a git server with automatic web deployment.
+task:
+  prompt: |-
+    Configure this container so it hosts a Git repository over SSH at `git@localhost:/git/server`
+    and automatically deploys pushed files to an HTTP server on port `8080`.
+
+    The SSH login details are part of the task:
+    - create a `git` user
+    - allow SSH access for that user
+    - password authentication must work with password `password`
+
+    The repository should be a bare repository at `/git/server`.
+    Pushing to `master` should deploy the committed files to the web server so that:
+
+        git clone git@localhost:/git/server
+        echo "hello world" > hello.html
+        git add hello.html
+        git commit -m "add hello.html"
+        git push origin master
+
+    makes the file available at:
+
+        curl http://localhost:8080/hello.html
+
+    and returns:
+
+        hello world
+
+    The evaluator will clone the repo over SSH using the `git` user and password `password`,
+    commit and push `hello.html`, and then verify that the deployed file is served correctly
+    over HTTP on port 8080.
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      apt:
+        - expect
+      pip:
+        - pytest
+  user: root
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

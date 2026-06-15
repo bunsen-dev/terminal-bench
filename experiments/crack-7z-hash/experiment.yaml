@@ -1,0 +1,28 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: crack-7z-hash
+description: >-
+  You need to create a file called "/workspace/solution.txt" with the word found in "secret_file.txt" in the
+  "secrets.7.... Category: security. Difficulty: medium
+task:
+  prompt: >-
+    You need to create a file called "/workspace/solution.txt" with the word found in "secret_file.txt" in the
+    "secrets.7z" archive.
+workspace:
+  sources:
+    - path: ./workspace
+environment:
+  image:
+    base: bunsen/headless
+run:
+  timeout: 45m
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 5m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

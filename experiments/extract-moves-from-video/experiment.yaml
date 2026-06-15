@@ -1,0 +1,29 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: extract-moves-from-video
+description: 'Extract chess moves from a video. Category: file-operations. Difficulty: hard'
+task:
+  prompt: Download this video of someone playing zork. https://www.youtube.com/watch?v=ZCbvyPbhRfA. Then transcribe the entire
+    contents of the text, and create a file /workspace/solution.txt that has all the moves they input, one per line, in the
+    format 'n' or 'get bag' etc.
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      pip:
+        - numpy==2.3.1
+        - opencv-python==4.11.0.86
+        - pytest
+run:
+  timeout: 30m
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

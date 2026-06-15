@@ -1,0 +1,22 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: create-bucket
+description: >-
+  Create an S3 bucket named "sample-bucket" using the aws cli and set it to public read. Category: file-operations.
+  Difficulty: easy
+task:
+  prompt: Create an S3 bucket named "sample-bucket" using the aws cli and set it to public read.
+environment:
+  image:
+    base: bunsen/headless
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

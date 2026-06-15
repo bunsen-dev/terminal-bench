@@ -1,0 +1,332 @@
+# Terminal Bench tasks that are maintained as native Bunsen experiments.
+# These directories are preserved across regeneration and skipped by the
+# mechanical converter. Keep notes here about why each task was forked.
+
+git-multibranch:
+  reason: "Service task needed task-specific verifier surgery under score_in_agent_container"
+  notes: |
+    Maintained as a native Bunsen experiment because the translated verifier
+    assumptions did not fit shared-container scoring semantics cleanly.
+
+create-bucket:
+  reason: "LocalStack routing depended on shell alias semantics that are not reliable across agents"
+  notes: |
+    Upstream Terminal Bench relies on `alias aws="awslocal"` in shell startup
+    state while the user-facing task still says to use `aws`. That is brittle:
+    many agents execute commands via non-interactive shells or direct subprocess
+    calls that never load the alias.
+
+    The native Bunsen fork keeps the same task text and verifier semantics but
+    replaces the alias with a real `aws` wrapper on `PATH` that delegates to
+    `awslocal`. It also opts into `score_in_agent_container: true` because the
+    verifier checks state inside the task's LocalStack service, not just files
+    in `/workspace`.
+
+    Together those changes make the environment contract explicit and durable
+    for any agent without adding converter-specific shell hacks.
+
+cron-broken-network:
+  reason: "The verifier depends on a specific example.com response that is no longer stable on the live public internet"
+  notes: |
+    Upstream Terminal Bench hard-codes an expected `example.com` HTML snapshot
+    into the verifier. That turned the Bunsen port into an externally brittle
+    task: an agent could fully repair `/usr/bin/curl` and still fail because
+    the live site had drifted.
+
+    We keep this as a native Bunsen fork so the task can pin that response
+    explicitly instead of teaching the shared converter about one-off external
+    dependency replay. The verifier now serves the pinned fixture locally only
+    for the delayed content assertion, while preserving the original task
+    prompt, sabotage mechanisms, root execution, agent-container scoring, and
+    delayed verifier check semantics without introducing agent-visible DNS or
+    hosts-file divergence.
+
+get-bitcoin-nodes:
+  reason: "Upstream mixes Bitcoin RPC and P2P semantics and relies on undeclared deterministic historical blockchain data"
+  notes: |
+    Upstream Terminal Bench first introduced this task as a Bitcoin Core RPC
+    task on port `8332`, then later rewrote the prompt to keep the RPC wording
+    while requiring connection to port `8333`, the default Bitcoin P2P port.
+    The verifier meanwhile deterministically expects the mainnet genesis block
+    and the genesis coinbase transaction.
+
+    Upstream's own solution probes peers on `8333` but then hard-codes those
+    genesis responses instead of retrieving them from a real Bitcoin Core RPC
+    server or a real historical P2P sync path. That makes the task contract
+    ambiguous and non-reproducible without hidden infrastructure assumptions.
+
+    We keep this as a native Bunsen fork so the task contract is explicit and
+    reproducible. The native experiment seeds a pinned Bitcoin fixture into
+    `/workspace/bitcoin-fixture`, restores the upstream `900` second agent
+    timeout, keeps the same graded API surface, and states clearly that live
+    peer or RPC connectivity is optional rather than an unstated requirement.
+
+    The Bunsen verifier is intentionally stricter than upstream: it enforces
+    exact `{"status": "online"}` semantics for `/status`, exact fixture-backed
+    genesis block and transaction responses, and tighter `404` error-response
+    shape checks. That gives the native fork a more coherent API contract than
+    the original Terminal Bench task and test pair.
+
+configure-git-webserver:
+  reason: "Upstream task prompt and verifier disagree about SSH authentication semantics"
+  notes: |
+    Upstream task.yaml says login is already handled, but the verifier performs
+    password-auth SSH to git@localhost. Native fork keeps the verifier behavior
+    and fixes the task text to match it.
+
+build-initramfs-qemu:
+  reason: "QEMU/x86 task semantics require experiment-native platform constraints"
+  notes: |
+    This task is specifically about building an initramfs that boots an x86_64
+    kernel under `qemu-system-x86_64`. That platform requirement is part of the
+    task contract, not a generic Terminal Bench conversion concern.
+
+    The native fork also prebuilds the immutable kernel and boot helper
+    artifacts into the image, then seeds them into `/workspace` with
+    `workspace.sources`. The verifier does not care whether the agent built the
+    kernel, so keeping that cost out of the run makes the task better aligned
+    with Bunsen's benchmark philosophy.
+
+build-linux-kernel-qemu:
+  reason: "QEMU/x86 task semantics require experiment-native platform constraints"
+  notes: |
+    This task builds an x86 kernel from source and verifies the result by
+    booting `qemu-system-x86_64`. Those architecture assumptions are intrinsic
+    to the experiment.
+
+    The native fork seeds a prepared `linux-6.9/` source tree plus immutable
+    initramfs helper files into `/workspace` with `workspace.sources`, while
+    leaving the actual kernel build and initramfs generation in-run. That keeps
+    the benchmark faithful to the original prompt but removes unnecessary setup
+    work and avoids brittle converter-specific logic.
+
+build-tcc-qemu:
+  reason: "QEMU/x86 task semantics and an upstream prompt/verifier mismatch require a native fork"
+  notes: |
+    This task depends on the same x86_64 kernel/QEMU environment as the other
+    QEMU build tasks and now carries an explicit x86-only platform declaration.
+
+    The native fork prebuilds the immutable kernel/initramfs boot environment
+    and seeds the TCC source tree into `/workspace`. The remaining in-run work
+    is the actual benchmark: compiling TCC and packaging it for the guest.
+
+    Upstream Terminal Bench leaves the ISO layout underspecified in the prompt,
+    while the verifier expects the mounted CD-ROM contents to be copied into `/`
+    and then used as a `/usr`-style install tree. The native fork keeps the
+    verifier semantics and minimally clarifies the task text instead of adding
+    task-specific converter logic.
+
+qemu-alpine-ssh:
+  reason: "QEMU/x86 VM semantics require experiment-native platform and seeded ISO handling"
+  notes: |
+    This task expects an x86_64 Alpine ISO to already exist at
+    `/workspace/alpine.iso`, then asks the agent to boot it under QEMU and
+    enable password-auth SSH into the guest.
+
+    Those semantics are not just generic Terminal Bench conversion details:
+    Bunsen needs an explicit `linux/amd64` platform constraint and must seed
+    the immutable ISO into `/workspace` with `workspace.sources` so the task
+    contract matches what the agent actually sees.
+
+    Keeping this task native is clearer than preserving more task-specific QEMU
+    and artifact-seeding behavior in the shared converter.
+
+crack-7z-hash:
+  reason: "The auto-converted Dockerfile builds John the Ripper before installing the libraries this task needs"
+  notes: |
+    This task depends on John the Ripper being compiled with 7z support. In the
+    mechanically converted version, Bunsen copied the upstream Dockerfile and
+    only added extra apt packages near the end of the image build. That was too
+    late: John had already been configured and compiled without the `zlib` and
+    `bzip2` development libraries it needs for this task.
+
+    We keep this task as a native Bunsen fork so its Dockerfile can install the
+    required build dependencies first, then compile John in the correct
+    environment. That is simpler and clearer than teaching the shared Terminal
+    Bench converter a one-off rule just for this task.
+
+reshard-c4-data:
+  reason: "The upstream port seeds a large pre-expanded dataset tree into /workspace, which does not fit Bunsen's current startup order"
+  notes: |
+    The mechanically converted task builds `c4_sample/` directly into image-layer
+    `/workspace`, then Bunsen copies workspace sources into `/workspace` and
+    performs non-root ownership handoff before agent execution. For this task,
+    that means recursively traversing a large 10,000-file seed tree during the
+    fixed-timeout user setup phase, which is brittle and has already caused run
+    startup timeouts.
+
+    The native fork keeps the benchmark contract but changes the seed transport:
+    the image builds a compressed immutable seed under `/seed`, the experiment
+    declares it via `workspace.sources`, and `workspace_setup` expands it into
+    `/workspace/c4_sample` as the non-root execution user. This keeps startup
+    cheap with today's executor ordering and leaves a clear path to a cleaner
+    long-term executor fix.
+
+sanitize-git-repo:
+  reason: "The verifier depends on a pinned upstream git repo state that should be seeded, not live-cloned during workspace setup"
+  notes: |
+    The mechanical port cloned `https://github.com/jeffreywpli/test-secret-removal.git`
+    at run time and asserted a specific HEAD. That makes the experiment depend
+    on live network transport during every run even though the verifier only
+    needs a fixed repo snapshot and git history.
+
+    We keep this task as a native Bunsen fork so the pinned `dclm` repository
+    is cloned once at image build time into `/seed/dclm` and then seeded into
+    `/workspace/dclm` with `workspace.sources`. This preserves the upstream git
+    history contract while removing brittle run-time clone behavior from the
+    shared Terminal Bench conversion path.
+
+sqlite-with-gcov:
+  reason: "SQLite's configure/build prerequisites do not fit the light shared apt override path"
+  notes: |
+    The mechanical port guessed a minimal apt list and injected `gcov` as a
+    standalone package, which broke image preparation. Upstream actually relies
+    on root-capable package installation plus system-path changes during the task
+    solution.
+
+    We keep this as a native Bunsen fork so the experiment can explicitly opt
+    into `requires_root: true` and `score_in_agent_container: true`, preserving
+    the upstream benchmark surface without adding task-specific converter hacks.
+    The native Dockerfile only installs verifier/runtime prerequisites, not the
+    SQLite build toolchain itself.
+
+train-fasttext:
+  reason: "The task mixes Python 3.11 verifier semantics with /app-scoped build-time preprocessing that the mechanical port broke"
+  notes: |
+    The shared converter extracted the packages from upstream `run-tests.sh`
+    and injected them into the task Dockerfile as a system `pip install` on
+    top of `python:3.13-slim-bookworm`. That changes the benchmark contract:
+    Terminal Bench actually creates a Python 3.11 test environment before
+    installing `pytest`, `scikit-learn`, `fasttext-wheel`, and `numpy==1.24.0`.
+
+    On `linux/arm64`, the converted Python 3.13 image falls back to building
+    `numpy==1.24.0` from source and the image build fails before any run can
+    start. Separately, the converted `reformat_data.py` was rewritten from
+    `/app/data/...` to `/workspace/data/...` even though that script runs at
+    image build time, so the build then failed again with `FileNotFoundError`.
+
+    The native Bunsen fork keeps the task prompt and data setup, restores the
+    build-time helper to `/app`, moves verifier dependencies into a dedicated
+    Python 3.11 virtualenv inside the image, and runs grading through a
+    task-local shell verifier. That preserves the upstream semantics without
+    teaching the shared converter task-specific Python-version or build-path
+    logic.
+
+write-compressor:
+  reason: "The task needs native workspace seeding and a verifier that distinguishes immutable seeded inputs from mutable final outputs"
+  notes: |
+    Upstream Terminal Bench bakes `decomp.c`, `data.txt`, and the compiled
+    `decomp` binary into `/app` and then runs both the agent and verifier in
+    that same filesystem. In Bunsen, the agent sees a fresh `/workspace` plus
+    an immutable `/workspace-source`, so a mechanical `/app` -> `/workspace`
+    rewrite is not enough.
+
+    We keep this as a native fork so the starter files are seeded explicitly
+    into `/workspace` with `workspace.sources`, while the verifier reads the
+    immutable originals from `/workspace-source` and checks the final
+    `/workspace/data.comp` without mutating seeded inputs. That is clearer than
+    teaching the shared converter to reason about verifier reads versus writes
+    for one task.
+
+swe-bench-astropy-1:
+  reason: "SWE-bench repo snapshot and verifier setup do not fit the mechanical workspace_setup translation"
+  notes: |
+    Native fork vendors the pinned repo snapshot locally, seeds it from the
+    image with workspace.sources, and keeps the editable test install inside
+    the verifier.
+
+swe-bench-astropy-2:
+  reason: "SWE-bench repo snapshot and verifier setup do not fit the mechanical workspace_setup translation"
+  notes: |
+    Native fork vendors the pinned repo snapshot locally, seeds it from the
+    image with workspace.sources, and keeps the editable test install inside
+    the verifier.
+
+swe-bench-fsspec:
+  reason: "SWE-bench repo snapshot and verifier setup do not fit the mechanical workspace_setup translation"
+  notes: |
+    Native fork vendors the pinned repo snapshot locally, seeds it from the
+    image with workspace.sources, and keeps the editable test install inside
+    the verifier.
+
+swe-bench-langcodes:
+  reason: "SWE-bench repo snapshot and verifier setup do not fit the mechanical workspace_setup translation"
+  notes: |
+    Native fork vendors the pinned repo snapshot locally, seeds it from the
+    image with workspace.sources, and keeps the editable test install inside
+    the verifier.
+
+polyglot-c-py:
+  reason: "Upstream task contract is weaker than the verifier's hidden final-state cleanliness rule"
+  notes: |
+    Upstream Terminal Bench's prompt asks for a "single file polyglot" at
+    `/workspace/polyglot/main.py.c` and explicitly tells the agent to verify
+    it with `gcc /workspace/polyglot/main.py.c -o /workspace/polyglot/cmain
+    && /workspace/polyglot/cmain N`. The verifier then asserts that
+    `/workspace/polyglot` contains literally only `main.py.c`, so the
+    prompt-encouraged compile artifact causes a 0.0 score before any
+    functional check runs. The verifier itself produces the same `cmain`
+    binary during grading and never cleans it up, so the post-grading
+    directory state is not actually pristine either.
+
+    The native fork keeps the upstream Fibonacci semantics and the same
+    Python/C polyglot test cases, but interprets "single file polyglot" as
+    source-level uniqueness rather than directory-level cleanliness:
+    `main.py.c` must exist as a regular file, the verifier recompiles from
+    that source on every run, and any leftover build artifacts from
+    prompt-encouraged verification are tolerated. The task text gains a
+    short clarification making this relaxation explicit so agents do not
+    have to infer hidden cleanup rules from likely verifier behavior.
+
+eval-mteb:
+  reason: "Custom Dockerfile for build-cache ordering, scorer container mode, and transitive dependency pin"
+  notes: |
+    Three deviations from the mechanical port:
+
+    1. **procps ordering**: The slim python:3.10 base image lacks `ps`
+       (procps), which Claude Code's KillShell tool requires. Adding procps
+       via extra_apt inserts it before the heavy `pip install mteb==1.36.8`
+       layer, busting the Docker build cache. The native fork appends procps
+       after the mteb install so the expensive ML dependency layer stays
+       cached.
+
+    2. **score_in_agent_container**: Upstream TB runs the verifier in the
+       same container as the agent. The verifier checks `~/.cache/huggingface`
+       (the HF model cache) and `/app/results` (MTEB output), both of which
+       live outside `/workspace`. Without agent-container scoring, the
+       separate scorer container only sees `/workspace` and both tests fail.
+       Adding `score_in_agent_container: true` matches TB's execution model.
+
+    3. **transformers<5 pin**: mteb 1.36.8 imports `AutoModelForVision2Seq`
+       from transformers, which was removed in transformers v5.0.0. When TB
+       was authored, the transitive dependency resolved to a compatible
+       version. Pinning `transformers<5` restores that working state so the
+       pre-installed mteb actually imports and produces the JSON format the
+       verifier expects (`results["scores"]["test"][0]["cosine_spearman"]`).
+
+    The amd64-only platform constraint was also removed — the Dockerfile
+    already includes gcc/g++ and scipy now ships arm64 wheels, so the task
+    runs natively on both architectures.
+
+polyglot-rust-c:
+  reason: "Upstream task contract is weaker than the verifier's hidden final-state cleanliness rule"
+  notes: |
+    Same shape as `polyglot-c-py`. Upstream's prompt asks for a "single file
+    polyglot" at `/workspace/polyglot/main.rs` and explicitly tells the agent
+    to verify it with `rustc /workspace/polyglot/main.rs && /workspace/polyglot/main N`
+    and `g++ -x c++ /workspace/polyglot/main.rs -o /workspace/polyglot/cmain
+    && /workspace/polyglot/cmain N`. The verifier then asserts that
+    `/workspace/polyglot` contains literally only `main.rs`, so the
+    prompt-encouraged `main` and `cmain` artifacts cause a 0.0 score before
+    any functional check runs. The verifier itself runs the same `rustc`
+    and `g++` invocations during grading and leaves the binaries behind.
+
+    The native fork keeps the upstream Fibonacci semantics and the same
+    Rust/C++ polyglot test cases, but interprets "single file polyglot" as
+    source-level uniqueness: `main.rs` must exist as a regular file, the
+    verifier recompiles from that source with both toolchains on every run,
+    and any leftover build artifacts from prompt-encouraged verification
+    are tolerated. The task text gains a short clarification making this
+    relaxation explicit. Compilation in the verifier was also changed from
+    `os.popen(...).read()` to `subprocess.run(..., check=True)` so toolchain
+    failures surface clearly rather than being silently swallowed.

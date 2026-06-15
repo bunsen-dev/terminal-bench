@@ -1,0 +1,26 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: oom
+description: 'I want you to cache the `albert/albert-base-v2` model and tokenizer from huggingface so that I can use it offline
+  via.... Category: data-science. Difficulty: medium'
+task:
+  prompt: |-
+    I want you to cache the `albert/albert-base-v2` model and tokenizer from huggingface so that I can use it offline via cache when I'm on my next flight.
+    transformers==4.52.4 and torch==2.7.1 have been installed system-wide, please do not uninstall them.
+workspace:
+  sources:
+    - path: ./workspace
+environment:
+  image:
+    base: bunsen/headless
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

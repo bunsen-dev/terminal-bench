@@ -1,0 +1,33 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: qemu-alpine-ssh
+description: >-
+  Start the /workspace/alpine.iso image in qemu, and then start an ssh server on the alpine linux vm. Category:
+  system-administration. Difficulty: medium
+task:
+  prompt: >-
+    Start the /workspace/alpine.iso image in qemu, and then start an ssh server on the alpine linux vm. When you're
+    done, I should be able to run `ssh -p 2222 root@localhost` with password `password123` and be dropped into a shell.
+    On the /workspace/alpine.iso image, the default username is root with no password.
+workspace:
+  sources:
+    - imagePath: /app/alpine.iso
+      target: alpine.iso
+environment:
+  image:
+    base: bunsen/headless
+  platforms:
+    - linux/amd64
+run:
+  timeout: 30m
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

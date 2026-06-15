@@ -1,0 +1,29 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: run-pdp11-code
+description: 'In /workspace/data.hex is the output of hexdump on a binary file. Category: security. Difficulty: hard'
+task:
+  prompt: In /workspace/data.hex is the output of hexdump on a binary file. Figure out what kind of file it is, then figure
+    out how to run it, and tell me what the output of that program is by writing the result to /workspace/out.txt
+workspace:
+  sources:
+    - path: ./workspace
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      pip:
+        - pytest
+run:
+  timeout: 1h
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

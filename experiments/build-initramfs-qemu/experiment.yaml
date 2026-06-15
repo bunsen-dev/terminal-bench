@@ -1,0 +1,43 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: build-initramfs-qemu
+description: 'Assemble a bootable initramfs for a prebuilt custom x86 kernel. Category: system-administration. Difficulty: medium'
+task:
+  prompt: >-
+    I've already placed a bootable custom kernel image at `/workspace/linux-6.9/arch/x86/boot/bzImage`, `gen_init_cpio`
+    at `/workspace/linux-6.9/usr/gen_init_cpio`, and starter helper files in `/workspace/ramfs/`.
+
+    The `ramfs/` directory already contains `basic-init` and `busybox-x86_64`, so you do not need to rebuild the kernel
+    or fetch boot helpers.
+
+
+    Please assemble an initramfs so that I can run:
+
+    `qemu-system-x86_64 -kernel /workspace/linux-6.9/arch/x86/boot/bzImage -initrd /workspace/ramfs/initramfs.cpio.gz
+    -append "console=ttyS0" -nographic`
+
+
+    It should boot me into the kernel as I expect, and I want to log in with username `root` and no password.
+workspace:
+  sources:
+    - imagePath: /seed/linux-6.9
+      target: linux-6.9
+    - imagePath: /seed/ramfs
+      target: ramfs
+environment:
+  image:
+    base: bunsen/headless
+  platforms:
+    - linux/amd64
+run:
+  timeout: 30m
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

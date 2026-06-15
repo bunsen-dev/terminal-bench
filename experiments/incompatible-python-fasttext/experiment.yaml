@@ -1,0 +1,30 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: incompatible-python-fasttext
+description: 'For some reason the fasttext python package is not currently working for me. Category: debugging. Difficulty:
+  medium'
+task:
+  prompt: |-
+    For some reason the fasttext python package is not currently working for me.
+
+    Can you please help me figure out why and fix it?
+
+    I need to be able to use it with the default system-wide python interpreter.
+workspace:
+  sources:
+    - imagePath: /model.bin
+      target: model.bin
+environment:
+  image:
+    base: bunsen/headless
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 4m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

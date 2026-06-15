@@ -1,0 +1,34 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: fix-git
+description: 'I just made some changes to my personal site and checked out master, but now I can''t find those changes. Category:
+  software-engineering. Difficulty: easy'
+task:
+  prompt: I just made some changes to my personal site and checked out master, but now I can't find those changes. Please
+    help me find them and merge them into master.
+workspace:
+  sources:
+    - path: ./workspace
+  setup:
+    - run: |
+        cd /workspace && bash /workspace/setup.sh
+      timeout: 2m
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      apt:
+        - git
+      pip:
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

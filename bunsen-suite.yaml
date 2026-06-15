@@ -1,0 +1,46 @@
+$schema: https://schemas.bunsen.dev/suite.v1.json
+version: v1
+name: Terminal Bench
+description: |
+  CLI agent benchmark ported into Bunsen from terminal-bench.org. Tasks
+  exercise an agent's ability to operate in a terminal: package management,
+  service configuration, system debugging, scientific computing, and small
+  coding challenges.
+version_tag: 0.1.0
+license: Apache-2.0
+
+compatibility:
+  # Earliest `bn` version that understands the v1 manifest schema features
+  # this suite relies on (e.g., `evaluation.container: agent`, code criteria
+  # with `bunsen-score` helper, workspace.sources, suite provenance fields).
+  min_bunsen_version: "0.3.0"
+
+experiments:
+  - experiments
+
+tags:
+  domains:
+    - cli
+    - sysadmin
+    - coding
+    - data-engineering
+    - debugging
+    - scientific-computing
+
+tracks:
+  default:
+    description: Full Terminal Bench suite (every experiment under experiments/).
+    include:
+      - "experiments/**"
+
+  smoke:
+    description: |
+      Cheap, code-scored experiments suitable for smoke testing a runtime
+      change without spinning up large images or waiting on long agent runs.
+    include:
+      - "experiments/hello-world/**"
+      - "experiments/fibonacci-server/**"
+      - "experiments/blind-maze-explorer-5x5/**"
+
+aggregation:
+  default: weighted_average

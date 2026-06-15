@@ -1,0 +1,32 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: sqlite-with-gcov
+description: >-
+  Compile SQLite in /workspace/sqlite with gcov instrumentation and make it available in the PATH. Category:
+  system-administration. Difficulty: medium
+task:
+  prompt: >-
+    Compile SQLite in /workspace/sqlite with gcov instrumentation and make it available in the PATH.
+
+    The SQLite source snapshot is pre-vendored at /workspace/vendor/sqlite-fossil-release.tar.gz; use it instead of
+    fetching sources over the network.
+workspace:
+  sources:
+    - path: ./workspace
+environment:
+  image:
+    base: bunsen/headless
+  user: root
+run:
+  timeout: 30m
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

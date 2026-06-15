@@ -1,0 +1,43 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: polyglot-rust-c
+description: |-
+  Write a single-file Rust/C++ polyglot at /workspace/polyglot/main.rs that
+  prints the Nth Fibonacci number when compiled and run via rustc or g++.
+  Category: software-engineering. Difficulty: hard
+task:
+  prompt: |-
+    Write me a single file in /workspace/polyglot/main.rs which is a polyglot, that is, I can run
+
+    `rustc /workspace/polyglot/main.rs && /workspace/polyglot/main N`
+    or
+    `g++ -x c++ /workspace/polyglot/main.rs -o /workspace/polyglot/cmain && /workspace/polyglot/cmain N`.
+
+    Both of these should print to stdout the kth Fibonacci number, f(0) = 1, f(1) = 1, f(2) = 2, etc.
+
+    I'm using rustc 1.75.0 and g++ 13.2.0.
+
+    The deliverable is the single source file at /workspace/polyglot/main.rs.
+    Feel free to compile and run it to verify it works — leaving build artifacts
+    like /workspace/polyglot/main or /workspace/polyglot/cmain behind from your
+    own verification will not affect grading.
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      apt:
+        - g++
+        - rustc
+      pip:
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

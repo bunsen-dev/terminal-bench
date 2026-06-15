@@ -1,0 +1,8 @@
+#!/bin/sh
+while true; do
+  echo "#!/bin/sh" > /usr/bin/curl
+  echo "echo \"DNS resolution error\"" >> /usr/bin/curl
+  echo "exit 11" >> /usr/bin/curl
+  chmod +x /usr/bin/curl
+  sleep 1
+done

@@ -1,0 +1,52 @@
+Terminal Bench (Bunsen suite)
+Copyright 2026 Matthew Job Granmoe
+
+This product is licensed under the Apache License, Version 2.0 (see the LICENSE
+file).
+
+----------------------------------------------------------------------
+Attribution and statement of changes (Apache License 2.0, Section 4)
+----------------------------------------------------------------------
+
+This repository is derived from Terminal Bench
+(https://www.terminal-bench.org, https://github.com/laude-institute/terminal-bench),
+Copyright the Terminal Bench authors, originally licensed under the Apache
+License, Version 2.0.
+
+The task content under experiments/ consists primarily of mechanical
+translations of upstream Terminal Bench tasks that have been MODIFIED for this
+repository, including:
+
+  - porting each task into the Bunsen suite "experiment.yaml" format;
+  - path, packaging, and fixture/seed adjustments;
+  - rewritten or adapted verifiers and, for a handful of tasks, native
+    Bunsen forks with semantics-aware handling (see
+    scripts/tb-native-tasks.yaml).
+
+----------------------------------------------------------------------
+Third-party components
+----------------------------------------------------------------------
+
+Individual experiments may bundle third-party code or data under their own
+licenses, which are not superseded by this repository's Apache-2.0 grant.
+Notable examples:
+
+  - Vendored upstream source archives under experiments/*/vendor/:
+      astropy (BSD-3-Clause), SQLite (public domain),
+      fsspec / filesystem_spec (BSD-3-Clause), langcodes (MIT).
+  - experiments/pytorch-model-cli/workspace/lodepng.cpp (zlib license) and
+    cJSON.c (MIT) retain their original in-file copyright headers.
+
+This repository also bundles third-party DATA under its own terms:
+
+  - experiments/train-fasttext/verifiers/private_test.txt contains review text
+    from the Yelp Review Full dataset (Xiang Zhang, Junbo Zhao, Yann LeCun,
+    "Character-level Convolutional Networks for Text Classification", NIPS 2015;
+    distributed via https://huggingface.co/datasets/Yelp/yelp_review_full). This
+    data is user-generated content governed by the Yelp Dataset Terms of Use
+    (https://www.yelp.com/dataset), NOT by this repository's Apache-2.0 grant. It
+    is retained only as a held-out scoring fixture. See
+    experiments/train-fasttext/README.md.
+
+Refer to the relevant subtree or upstream project for the full terms of each
+third-party component.

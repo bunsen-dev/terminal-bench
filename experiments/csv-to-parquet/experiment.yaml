@@ -1,0 +1,32 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: csv-to-parquet
+description: 'Convert the file ''/workspace/data.csv'' into a Parquet file named ''/workspace/data.parquet''. Category: data-science.
+  Difficulty: easy'
+task:
+  prompt: Convert the file '/workspace/data.csv' into a Parquet file named '/workspace/data.parquet'. The CSV file contains
+    sample data with headers.
+workspace:
+  sources:
+    - path: ./workspace
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      apt:
+        - curl
+      pip:
+        - pandas==2.3.0
+        - pyarrow==20.0.0
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

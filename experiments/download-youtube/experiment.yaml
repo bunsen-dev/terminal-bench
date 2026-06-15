@@ -1,0 +1,26 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: download-youtube
+description: 'Download and extract a frame from a YouTube video. Category: file-operations. Difficulty: medium'
+task:
+  prompt: Download the first video ever uploaded to YouTube as an mp4. Then, trim the video to the final 10 seconds and save
+    it as `/workspace/result.mp4`.
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      pip:
+        - numpy==2.3.1
+        - opencv-python-headless==4.11.0.86
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 4m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

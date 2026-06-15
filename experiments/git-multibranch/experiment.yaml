@@ -1,0 +1,40 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: git-multibranch
+description: Set up an SSH Git server with branch-based HTTPS deployments.
+task:
+  prompt: |-
+    Set up this container so it hosts a Git project over SSH at `git@localhost:/git/project`
+    using password authentication. The password for the `git` user must be `password`.
+
+    Configure the system so pushes deploy branch contents to HTTPS endpoints:
+    - `main` branch -> `https://localhost:8443/index.html`
+    - `dev` branch -> `https://localhost:8443/dev/index.html`
+
+    Requirements:
+    1. Create a bare repository at `/git/project`
+    2. Run an SSH server that accepts password auth for the `git` user
+    3. Run Nginx on port `8443`
+    4. Use the existing self-signed certificate at:
+       - `/etc/ssl/certs/nginx-selfsigned.crt`
+       - `/etc/ssl/private/nginx-selfsigned.key`
+    5. Install a `post-receive` hook so pushes to `main` and `dev` deploy automatically
+    6. Make each deployment visible at its HTTPS endpoint within 3 seconds of the push
+
+    The evaluator will clone the repo over SSH, force-push `main` and `dev`, and verify
+    that each endpoint serves the pushed content.
+environment:
+  image:
+    base: bunsen/headless
+  user: root
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: bash /bunsen/verifiers/run_tests.sh

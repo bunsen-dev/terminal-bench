@@ -1,0 +1,23 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: hello-world
+description: 'Create a file called /workspace/hello.txt. Category: file-operations. Difficulty: easy'
+task:
+  prompt: Create a file called /workspace/hello.txt. Write "Hello, world!" to it.
+environment:
+  image:
+    base: bunsen/headless
+  requires:
+    packages:
+      pip:
+        - pytest
+evaluation:
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 3m
+      run: pytest /bunsen/verifiers/test_outputs.py -v

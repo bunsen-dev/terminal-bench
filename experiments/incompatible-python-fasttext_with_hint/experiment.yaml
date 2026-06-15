@@ -1,0 +1,31 @@
+$schema: https://schemas.bunsen.dev/experiment.v1.json
+version: v1
+name: incompatible-python-fasttext-with-hint
+description: 'For some reason the fasttext python package is not currently working for me. Category: debugging. Difficulty:
+  medium'
+task:
+  prompt: |-
+    For some reason the fasttext python package is not currently working for me.
+
+    Can you please help me figure out why and fix it?
+
+    I need to be able to use it with the default system-wide python interpreter.
+    Hint: The issue is related to a numpy API change in Python 3.13. The fasttext package uses `np.array(probs, copy=False)` which is no longer supported. Look in the fasttext source code (in site-packages) for this call and replace it with `np.asarray(probs)`.
+workspace:
+  sources:
+    - imagePath: /model.bin
+      target: model.bin
+environment:
+  image:
+    base: bunsen/headless
+evaluation:
+  container: agent
+  criteria:
+    - id: tests-pass
+      title: Tests Pass
+      type: script
+      scores:
+        - 0
+        - 1
+      timeout: 4m
+      run: pytest /bunsen/verifiers/test_outputs.py -v
